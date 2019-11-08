@@ -19,7 +19,7 @@ args = parser.parse_args()
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-im_features, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+ifid, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
@@ -48,8 +48,24 @@ for w in words:
 test_features = test_features * idf
 test_features = preprocessing.normalize(test_features, norm='l2')
 
-score = np.dot(test_features, im_features.T)
+# score = np.dot(test_features, im_features.T)
+# rank_ID = np.argsort(-score)
+candidates = dict()
+for i, feature in enumerate(test_features.flatten()):
+    if feature != 0:
+        for candidate, val in ifid[i]:
+            if candidate not in candidates:
+                candidates[candidate] = np.zeros(numWords)
+
+            candidates[candidate][i] += val
+np_hists = np.zeros((len(candidates), numWords), dtype=np.float)
+id_convert = dict()
+for i, (candidate, hist) in enumerate(candidates.items()):
+    np_hists[i] = hist
+    id_convert[i] = candidate
+score = np.dot(test_features, np_hists.T)
 rank_ID = np.argsort(-score)
+rank_ID = np.array([id_convert[i] for i in rank_ID.flatten()]).reshape((1, -1))
 
 # Visualize the results
 plt.figure()

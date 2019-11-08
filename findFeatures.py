@@ -69,4 +69,11 @@ idf = np.array(np.log((1.0 * len(image_paths) + 1) / (1.0 * nbr_occurences + 1))
 im_features = im_features * idf
 im_features = preprocessing.normalize(im_features, norm='l2')
 
-joblib.dump((im_features, image_paths, idf, numWords, voc), "bof.pkl", compress=3)
+ifid = [[] for _ in range(numWords)]
+
+for i, im_feature in enumerate(im_features):
+    for j, feature in enumerate(im_feature):
+        if feature != 0:
+            ifid[j].append((i, feature))
+
+joblib.dump((ifid, image_paths, idf, numWords, voc), "bof.pkl", compress=3)
