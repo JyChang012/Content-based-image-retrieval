@@ -19,7 +19,7 @@ args = parser.parse_args()
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-ifid, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
@@ -39,33 +39,26 @@ des_list.append((image_path, des))
 # Stack all the descriptors vertically in a numpy array
 descriptors = des_list[0][1]
 
-test_features = np.zeros((1, numWords), "float32")
+test_features = np.zeros(numWords, "float32")
 words, distance = vq(descriptors, voc)
 for w in words:
-    test_features[0][w] += 1
+    test_features[w] += 1
 
 # Perform Tf-Idf vectorization and L2 normalization
 test_features = test_features * idf
-test_features = preprocessing.normalize(test_features, norm='l2')
+test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
 
-# score = np.dot(test_features, im_features.T)
-# rank_ID = np.argsort(-score)
+# recover histograms of candidate images
 candidates = dict()
-for i, feature in enumerate(test_features.flatten()):
+for i, feature in enumerate(test_features):
     if feature != 0:
-        for candidate, val in ifid[i]:
+        for candidate, val in inverted_file_idx[i]:
             if candidate not in candidates:
                 candidates[candidate] = np.zeros(numWords)
-
             candidates[candidate][i] += val
-np_hists = np.zeros((len(candidates), numWords), dtype=np.float)
-id_convert = dict()
-for i, (candidate, hist) in enumerate(candidates.items()):
-    np_hists[i] = hist
-    id_convert[i] = candidate
-score = np.dot(test_features, np_hists.T)
-rank_ID = np.argsort(-score)
-rank_ID = np.array([id_convert[i] for i in rank_ID.flatten()]).reshape((1, -1))
+
+# sort according to similarity, return indices of images
+rank_ID = sorted(candidates, key=lambda idx: candidates[idx] @ test_features, reverse=True)
 
 # Visualize the results
 plt.figure()
@@ -75,12 +68,12 @@ plt.imshow(im[:, :, ::-1])
 plt.title('query image')
 plt.axis('off')
 
-for i, ID in enumerate(rank_ID[0][0:16]):
+for i, ID in enumerate(rank_ID[:16]):
     img = Image.open(image_paths[ID])
     plt.gray()
     plt.subplot(5, 4, i + 5)
     plt.imshow(img)
     plt.axis('off')
 
-plt.savefig('result.png')
+plt.savefig('result.svg')
 plt.show()

@@ -69,11 +69,11 @@ idf = np.array(np.log((1.0 * len(image_paths) + 1) / (1.0 * nbr_occurences + 1))
 im_features = im_features * idf
 im_features = preprocessing.normalize(im_features, norm='l2')
 
-ifid = [[] for _ in range(numWords)]
+inverted_file_idx = [[]] * numWords
 
 for i, im_feature in enumerate(im_features):
     for j, feature in enumerate(im_feature):
         if feature != 0:
-            ifid[j].append((i, feature))
+            inverted_file_idx[j].append((i, feature))
 
-joblib.dump((ifid, image_paths, idf, numWords, voc), "bof.pkl", compress=3)
+joblib.dump((inverted_file_idx, image_paths, idf, numWords, voc), "bof.pkl", compress=3)
