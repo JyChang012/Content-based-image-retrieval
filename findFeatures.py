@@ -11,7 +11,9 @@ from tqdm import tqdm
 # Get the path of the training set
 parser = ap.ArgumentParser()
 parser.add_argument("-t", "--trainingSet", help="Path to Training Set", required=True)
-args = parser.parse_args()
+args = parser.parse_args(
+    '-t dataset/training/'.split(' ')
+)
 
 # Get the training classes names and store them in a list
 train_path = args.trainingSet  # train_path = "dataset/train/"
@@ -31,9 +33,9 @@ sift = cv2.xfeatures2d.SIFT_create()
 # List where all the descriptors are stored
 des_list = []
 
-for i, image_path in enumerate(image_paths):
+for img_idx, image_path in enumerate(image_paths):
     im = cv2.imread(image_path)
-    print(f"Extract SIFT of {training_names[i]} image, {i} of {len(image_paths)} images")
+    print(f"Extract SIFT of {training_names[img_idx]} image, {img_idx} of {len(image_paths)} images")
     kpts, des = sift.detectAndCompute(im, None)  # des: all candidate keypoints in the image
     # rootsift
     # rs = RootSIFT()
@@ -56,27 +58,30 @@ print(f"Start k-means: {numWords} words, {descriptors.shape[0]} key points")
 voc, variance = kmeans(descriptors, numWords, 1)  # voc: all 1000 keypoints (1000, 182)
 
 # Calculate the histogram of features
-im_features = np.zeros((len(image_paths), numWords), "float32")  # each row is the hist of a image
-for i in range(len(image_paths)):
-    words, distance = vq(des_list[i][1], voc)
+imgs_features = np.zeros((len(image_paths), numWords), "float32")  # each row is the hist of a image
+for img_idx in range(len(image_paths)):
+    words, distance = vq(des_list[img_idx][1], voc)
     for w in words:
-        im_features[i][w] += 1
+        imgs_features[img_idx][w] += 1
 
 del des_list
 
 # Perform Tf-Idf vectorization
-nbr_occurences = np.sum((im_features > 0) * 1, axis=0)
+nbr_occurences = np.sum((imgs_features > 0) * 1, axis=0)
 idf = np.array(np.log((1.0 * len(image_paths) + 1) / (1.0 * nbr_occurences + 1)), 'float32')
 
 # Perform L2 normalization
-im_features = im_features * idf
-im_features = preprocessing.normalize(im_features, norm='l2')
+imgs_features = imgs_features * idf
+imgs_features = preprocessing.normalize(imgs_features, norm='l2')
 
-inverted_file_idx = [[]] * numWords
+inverted_file_idx = [[] for _ in range(numWords)]
 
-for i, im_feature in enumerate(tqdm(im_features)):
-    for j, feature in enumerate(im_feature):
-        if feature != 0:
-            inverted_file_idx[j].append((i, feature))
+for img_idx, img_features in enumerate(tqdm(imgs_features)):
+    for feature_idx, feature_val in enumerate(img_features):
+        if feature_val != 0:
+            # if img_idx not in inverted_file_idx[feature_idx]:
+            #     inverted_file_idx[feature_idx][img_idx] = 0.
+            # inverted_file_idx[feature_idx][img_idx] += feature
+            inverted_file_idx[feature_idx].append((img_idx, feature_val))
 
 joblib.dump((inverted_file_idx, image_paths, idf, numWords, voc), "bof.pkl", compress=3)
