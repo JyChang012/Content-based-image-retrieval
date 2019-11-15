@@ -49,16 +49,16 @@ test_features = test_features * idf
 test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
 
 # recover histograms of candidate images
-candidates = dict()
+candidates_bow = dict()
 for i, feature in enumerate(test_features):
     if feature != 0:
         for candidate, val in inverted_file_idx[i]:
-            if candidate not in candidates:
-                candidates[candidate] = np.zeros(numWords)
-            candidates[candidate][i] += val
+            if candidate not in candidates_bow:
+                candidates_bow[candidate] = np.zeros(numWords)
+            candidates_bow[candidate][i] += val
 
 # sort according to similarity, return indices of images
-rank_ID = sorted(candidates, key=lambda idx: candidates[idx] @ test_features, reverse=True)
+rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
 
 # Visualize the results
 plt.figure()

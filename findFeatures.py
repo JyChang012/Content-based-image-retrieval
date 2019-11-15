@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 from scipy.cluster.vq import *
 from sklearn import preprocessing
+from tqdm import tqdm
 
 # Get the path of the training set
 parser = ap.ArgumentParser()
@@ -48,7 +49,7 @@ for i, image_path in enumerate(image_paths):
 # Stack all the descriptors vertically in a numpy array
 descriptors = des_list[0][1]  # descriptors: all candidate keypoints
 for image_path, descriptor in des_list[1:]:
-    descriptors = np.vstack((descriptors, descriptor))
+    descriptors = np.vstack((descriptors, descriptor))  # memory explodes!
 
 # Perform k-means clustering
 print(f"Start k-means: {numWords} words, {descriptors.shape[0]} key points")
@@ -61,6 +62,8 @@ for i in range(len(image_paths)):
     for w in words:
         im_features[i][w] += 1
 
+del des_list
+
 # Perform Tf-Idf vectorization
 nbr_occurences = np.sum((im_features > 0) * 1, axis=0)
 idf = np.array(np.log((1.0 * len(image_paths) + 1) / (1.0 * nbr_occurences + 1)), 'float32')
@@ -71,7 +74,7 @@ im_features = preprocessing.normalize(im_features, norm='l2')
 
 inverted_file_idx = [[]] * numWords
 
-for i, im_feature in enumerate(im_features):
+for i, im_feature in enumerate(tqdm(im_features)):
     for j, feature in enumerate(im_feature):
         if feature != 0:
             inverted_file_idx[j].append((i, feature))
