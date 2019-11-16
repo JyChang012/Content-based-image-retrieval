@@ -4,7 +4,6 @@ import cv2
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
 from scipy.cluster.vq import *
 from sklearn import preprocessing
 from tqdm import tqdm
@@ -26,7 +25,7 @@ args = parser.parse_args(
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+voc_tree, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
@@ -57,12 +56,17 @@ test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2')
 
 # recover histograms of candidate images
 candidates_bow = dict()
-for i, feature in enumerate(tqdm(test_features)):
+# for i, feature in enumerate(tqdm(test_features)):
+#     if feature != 0:
+#         for candidate, val in inverted_file_idx[i]:  # Only care about candidate features that are non-zero in query img
+#             if candidate not in candidates_bow:      # boW, since they don't contribute to the inner product
+#                 candidates_bow[candidate] = np.zeros(numWords)
+#             candidates_bow[candidate][i] += val
+
+for feature_id, feature in enumerate(tqdm(test_features)):
     if feature != 0:
-        for candidate, val in inverted_file_idx[i]:
-            if candidate not in candidates_bow:
-                candidates_bow[candidate] = np.zeros(numWords)
-            candidates_bow[candidate][i] += val
+        pass
+
 
 # sort according to similarity, return indices of images
 rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
