@@ -25,7 +25,7 @@ args = parser.parse_args(
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-voc_tree, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+voc_tree, image_paths, idf, numWords, voc = joblib.load("bof_tree.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
@@ -45,17 +45,17 @@ des_list.append((image_path, query_des))
 # Stack all the descriptors vertically in a numpy array
 descriptors = des_list[0][1]
 
-test_features = np.zeros(numWords, "float32")
-words, distance = vq(descriptors, voc)
-for w in words:
-    test_features[w] += 1
+# test_features = np.zeros(numWords, "float32")
+# words, distance = vq(descriptors, voc)
+# for w in words:
+#     test_features[w] += 1
 
 # Perform Tf-Idf vectorization and L2 normalization
-test_features = test_features * idf
-test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
+# test_features = test_features * idf
+# test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
 
 # recover histograms of candidate images
-candidates_bow = dict()
+# candidates_bow = dict()
 # for i, feature in enumerate(tqdm(test_features)):
 #     if feature != 0:
 #         for candidate, val in inverted_file_idx[i]:  # Only care about candidate features that are non-zero in query img
@@ -63,13 +63,11 @@ candidates_bow = dict()
 #                 candidates_bow[candidate] = np.zeros(numWords)
 #             candidates_bow[candidate][i] += val
 
-for feature_id, feature in enumerate(tqdm(test_features)):
-    if feature != 0:
-        pass
-
-
 # sort according to similarity, return indices of images
-rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
+# rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
+
+# voc_tree.init_tf_idf(idf)
+rank_ID = voc_tree.search_nearest(descriptors)
 
 # Visualize the results
 plt.figure(
@@ -90,7 +88,6 @@ flann = cv2.FlannBasedMatcher(index_params, search_params)
 for i, ID in enumerate(rank_ID[:16]):
     # img = Image.open(image_paths[ID])
     candidate_img = cv2.imread(image_paths[ID])
-    candidate_img = cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB)
     kpts, des = sift.detectAndCompute(candidate_img, None)
 
     matches = flann.knnMatch(query_des, des, k=2)
@@ -104,7 +101,7 @@ for i, ID in enumerate(rank_ID[:16]):
     plt.gray()
     plt.subplot(5, 4, i + 5)
 
-    plt.imshow(candidate_img)
+    plt.imshow(cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB))
     plt.axis('off')
 
     if len(good) > MIN_MATCH_COUNT:
