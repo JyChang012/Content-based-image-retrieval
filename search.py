@@ -73,7 +73,7 @@ plt.figure(
 )
 plt.gray()
 plt.subplot(5, 4, 1)
-plt.imshow(im[:, :, ::-1])
+plt.imshow(im[:, :, ::-1])  # BGR2RGB
 plt.title('query image')
 plt.axis('off')
 
@@ -86,7 +86,6 @@ flann = cv2.FlannBasedMatcher(index_params, search_params)
 for i, ID in enumerate(rank_ID[:16]):
     # img = Image.open(image_paths[ID])
     candidate_img = cv2.imread(image_paths[ID])
-    candidate_img = cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB)
     kpts, des = sift.detectAndCompute(candidate_img, None)
 
     matches = flann.knnMatch(query_des, des, k=2)
@@ -100,7 +99,7 @@ for i, ID in enumerate(rank_ID[:16]):
     plt.gray()
     plt.subplot(5, 4, i + 5)
 
-    plt.imshow(candidate_img)
+    plt.imshow(cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB))
     plt.axis('off')
 
     if len(good) > MIN_MATCH_COUNT:
