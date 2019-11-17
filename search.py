@@ -23,7 +23,7 @@ parser.add_argument("-i", "--image", help="Path to query image", required=True)
 parser.add_argument('-f', '--feedback', help='Whether to enable feedback', action='store_true')
 
 args = parser.parse_args(
-    '-i dataset/testing/trinity_000033.jpg -f'.split(' ')  # radcliffe_camera_000397.jpg
+    # '-i dataset/testing/trinity_000033.jpg -f'.split(' ')  # radcliffe_camera_000397.jpg
 )
 
 # Get query image path
@@ -133,10 +133,8 @@ if args.feedback:
 
         positives = np.vstack([candidates_bow[i] for i in positives])
         negatives = np.vstack([candidates_bow[i] for i in negatives])
-        test_features = test_features + P_FACTOR * np.average(positives, axis=0) - \
-                        N_FACTOR * np.average(negatives, axis=0)
+        test_features = test_features + P_FACTOR * np.average(positives, axis=0) - N_FACTOR * np.average(negatives,
+                                                                                                         axis=0)
         test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
         candidates_bow, rank_ID = search(test_features)
         print('This is the new result!')
-
-
