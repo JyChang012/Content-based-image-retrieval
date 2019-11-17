@@ -18,7 +18,7 @@ Min_INLIERS_COUNT = 10
 parser = ap.ArgumentParser()
 parser.add_argument("-i", "--image", help="Path to query image", required=True)
 args = parser.parse_args(
-    '-i dataset/training/radcliffe_camera_000397.jpg'.split(' ')
+    # '-i dataset/training/radcliffe_camera_000397.jpg'.split(' ')
 )
 
 # Get query image path
