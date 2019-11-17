@@ -37,10 +37,6 @@ des_list = []
 im = cv2.imread(image_path)
 query_kpts, query_des = sift.detectAndCompute(im, None)
 
-# rootsift
-# rs = RootSIFT()
-# des = rs.compute(kpts, des)
-
 des_list.append((image_path, query_des))
 
 # Stack all the descriptors vertically in a numpy array
@@ -84,7 +80,6 @@ search_params = dict(checks=50)
 flann = cv2.FlannBasedMatcher(index_params, search_params)
 
 for i, ID in enumerate(rank_ID[:16]):
-    # img = Image.open(image_paths[ID])
     candidate_img = cv2.imread(image_paths[ID])
     kpts, des = sift.detectAndCompute(candidate_img, None)
 
