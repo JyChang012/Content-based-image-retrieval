@@ -23,14 +23,14 @@ parser.add_argument("-i", "--image", help="Path to query image", required=True)
 parser.add_argument('-f', '--feedback', help='Whether to enable feedback', action='store_true')
 
 args = parser.parse_args(
-    '-i dataset/training/radcliffe_camera_000397.jpg'.split(' ')
+    '-i dataset/testing/trinity_000033.jpg -f'.split(' ')  # radcliffe_camera_000397.jpg
 )
 
 # Get query image path
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("pkl/bof.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
@@ -113,10 +113,13 @@ def search(query_features):
             dst_pts = np.float32([kpts[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
             M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.)
             # if not np.sum(mask) / mask.shape[0] > .4:r
-            if not np.sum(mask) > Min_INLIERS_COUNT:
-                plt.title('verification failed')
+            if np.sum(mask) > Min_INLIERS_COUNT:
+                plt.title(f'{i}: succeeded', fontdict=dict(size=6))
+            else:
+                plt.title(f'{i}: verification failed', fontdict=dict(size=6))
+
         else:
-            plt.title('insufficient matching points', fontdict=dict(size=6))
+            plt.title(f'{i}: insufficient matching points', fontdict=dict(size=6))
 
     plt.savefig(f'result_{os.path.split(args.image)[-1]}.svg')
     plt.show()
@@ -126,8 +129,8 @@ def search(query_features):
 
 candidates_bow, rank_ID = search(test_features)
 if args.feedback:
-    while input('Do you want to continue to give feedback??') in ['yes', 'y']:
-        positives = input('Please enter the indices of your desirable images, starting from 0 and split by space!')
+    while input('Do you want to continue to give feedback?\n') in ['yes', 'y']:
+        positives = input('Please enter the indices of your desirable images, starting from 0 and split by space!\n')
         positives = [int(num) for num in positives.split(' ')]
         positives = map(rank_ID.__getitem__, positives)
         positives = set(positives)
@@ -138,5 +141,7 @@ if args.feedback:
         test_features = test_features + P_FACTOR * np.average(positives, axis=0) - \
                         N_FACTOR * np.average(negatives, axis=0)
         test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
-        print('This is the new result!')
         candidates_bow, rank_ID = search(test_features)
+        print('This is the new result!')
+
+
