@@ -54,12 +54,6 @@ else:
         des_list.append((image_path, des))
 
     # Stack all the descriptors vertically in a numpy array
-    # downsampling = 1
-    # descriptors = des_list[0][1][::downsampling,:]
-    # for image_path, descriptor in des_list[1:]:
-    #     descriptors = np.vstack((descriptors, descriptor[::downsampling,:]))
-
-    # Stack all the descriptors vertically in a numpy array
     descriptors = des_list[0][1]  # descriptors: all candidate keypoints
     for image_path, descriptor in des_list[1:]:
         descriptors = np.vstack((descriptors, descriptor))  # memory explodes!
@@ -92,15 +86,5 @@ imgs_features = imgs_features * idf
 imgs_features = preprocessing.normalize(imgs_features, norm='l2')
 
 voc_tree.create_inv_idx(imgs_features)
-
-# inverted_file_idx = [[] for _ in range(numWords)]
-#
-# for img_idx, img_features in enumerate(tqdm(imgs_features)):
-#     for feature_idx, feature_val in enumerate(img_features):
-#         if feature_val != 0:
-#             # if img_idx not in inverted_file_idx[feature_idx]:
-#             #     inverted_file_idx[feature_idx][img_idx] = 0.
-#             # inverted_file_idx[feature_idx][img_idx] += feature
-#             inverted_file_idx[feature_idx].append((img_idx, feature_val))
 
 joblib.dump((voc_tree, image_paths, idf, numWords, voc), "bof_tree.pkl", compress=3)

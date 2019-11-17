@@ -36,35 +36,10 @@ des_list = []
 im = cv2.imread(image_path)
 query_kpts, query_des = sift.detectAndCompute(im, None)
 
-# rootsift
-# rs = RootSIFT()
-# des = rs.compute(kpts, des)
-
 des_list.append((image_path, query_des))
 
 # Stack all the descriptors vertically in a numpy array
 descriptors = des_list[0][1]
-
-# test_features = np.zeros(numWords, "float32")
-# words, distance = vq(descriptors, voc)
-# for w in words:
-#     test_features[w] += 1
-
-# Perform Tf-Idf vectorization and L2 normalization
-# test_features = test_features * idf
-# test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
-
-# recover histograms of candidate images
-# candidates_bow = dict()
-# for i, feature in enumerate(tqdm(test_features)):
-#     if feature != 0:
-#         for candidate, val in inverted_file_idx[i]:  # Only care about candidate features that are non-zero in query img
-#             if candidate not in candidates_bow:      # boW, since they don't contribute to the inner product
-#                 candidates_bow[candidate] = np.zeros(numWords)
-#             candidates_bow[candidate][i] += val
-
-# sort according to similarity, return indices of images
-# rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
 
 # voc_tree.init_tf_idf(idf)
 rank_ID = voc_tree.search_nearest(descriptors)
