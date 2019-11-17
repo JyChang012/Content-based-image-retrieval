@@ -26,7 +26,7 @@ args = parser.parse_args(
 image_path = args.image
 
 # Load the classifier, class names, scaler, number of clusters and vocabulary 
-inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("bof.pkl")
+inverted_file_idx, image_paths, idf, numWords, voc = joblib.load("pkl/bof.pkl")
 
 # Create feature extraction and keypoint detector objects
 sift = cv2.xfeatures2d.SIFT_create()
