@@ -14,10 +14,14 @@ import os
 
 MIN_MATCH_COUNT = 10
 Min_INLIERS_COUNT = 10
+P_FACTOR = .2
+N_FACTOR = .2
 
 # Get the path of the training set
 parser = ap.ArgumentParser()
 parser.add_argument("-i", "--image", help="Path to query image", required=True)
+parser.add_argument('-f', '--feedback', help='Whether to enable feedback', action='store_true')
+
 args = parser.parse_args(
     '-i dataset/training/radcliffe_camera_000397.jpg'.split(' ')
 )
@@ -55,62 +59,84 @@ for w in words:
 test_features = test_features * idf
 test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
 
-# recover histograms of candidate images
-candidates_bow = dict()
-for i, feature in enumerate(tqdm(test_features)):
-    if feature != 0:
-        for candidate, val in inverted_file_idx[i]:
-            if candidate not in candidates_bow:
-                candidates_bow[candidate] = np.zeros(numWords)
-            candidates_bow[candidate][i] += val
 
-# sort according to similarity, return indices of images
-rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ test_features, reverse=True)
+def search(query_features):
+    # recover histograms of candidate images
+    candidates_bow = dict()
+    for i, feature in enumerate(tqdm(query_features)):
+        if feature != 0:
+            for candidate, val in inverted_file_idx[i]:
+                if candidate not in candidates_bow:
+                    candidates_bow[candidate] = np.zeros(numWords)
+                candidates_bow[candidate][i] += val
 
-# Visualize the results
-plt.figure(
-    tight_layout=True
-)
-plt.gray()
-plt.subplot(5, 4, 1)
-plt.imshow(im[:, :, ::-1])  # BGR2RGB
-plt.title('query image')
-plt.axis('off')
+    # sort according to similarity, return indices of images
+    rank_ID = sorted(candidates_bow, key=lambda idx: candidates_bow[idx] @ query_features, reverse=True)
 
-FLANN_INDEX_KDTREE = 0
-index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-search_params = dict(checks=50)
-
-flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-for i, ID in enumerate(rank_ID[:16]):
-    # img = Image.open(image_paths[ID])
-    candidate_img = cv2.imread(image_paths[ID])
-    kpts, des = sift.detectAndCompute(candidate_img, None)
-
-    matches = flann.knnMatch(query_des, des, k=2)
-
-    # store all the good matches as per Lowe's ratio test.
-    good = []
-    for m, n in matches:
-        if m.distance < 0.7 * n.distance:
-            good.append(m)
-
+    # Visualize the results
+    plt.figure(
+        tight_layout=True
+    )
     plt.gray()
-    plt.subplot(5, 4, i + 5)
-
-    plt.imshow(cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB))
+    plt.subplot(5, 4, 1)
+    plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))  # BGR2RGB
+    plt.title('query image')
     plt.axis('off')
 
-    if len(good) > MIN_MATCH_COUNT:
-        src_pts = np.float32([query_kpts[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kpts[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.)
-        # if not np.sum(mask) / mask.shape[0] > .4:r
-        if not np.sum(mask) > Min_INLIERS_COUNT:
-            plt.title('verification failed')
-    else:
-        plt.title('insufficient matching points', fontdict=dict(size=6))
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    search_params = dict(checks=50)
 
-plt.savefig(f'result_{os.path.split(args.image)[-1]}.svg')
-plt.show()
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+    for i, ID in enumerate(rank_ID[:16]):
+        # img = Image.open(image_paths[ID])
+        candidate_img = cv2.imread(image_paths[ID])
+        kpts, des = sift.detectAndCompute(candidate_img, None)
+
+        matches = flann.knnMatch(query_des, des, k=2)
+
+        # store all the good matches as per Lowe's ratio test.
+        good = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:
+                good.append(m)
+
+        plt.gray()
+        plt.subplot(5, 4, i + 5)
+
+        plt.imshow(cv2.cvtColor(candidate_img, cv2.COLOR_BGR2RGB))
+        plt.axis('off')
+
+        if len(good) > MIN_MATCH_COUNT:
+            src_pts = np.float32([query_kpts[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
+            dst_pts = np.float32([kpts[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.)
+            # if not np.sum(mask) / mask.shape[0] > .4:r
+            if not np.sum(mask) > Min_INLIERS_COUNT:
+                plt.title('verification failed')
+        else:
+            plt.title('insufficient matching points', fontdict=dict(size=6))
+
+    plt.savefig(f'result_{os.path.split(args.image)[-1]}.svg')
+    plt.show()
+
+    return candidates_bow, rank_ID
+
+
+candidates_bow, rank_ID = search(test_features)
+if args.feedback:
+    while input('Do you want to continue to give feedback??') in ['yes', 'y']:
+        positives = input('Please enter the indices of your desirable images, starting from 0 and split by space!')
+        positives = [int(num) for num in positives.split(' ')]
+        positives = map(rank_ID.__getitem__, positives)
+        positives = set(positives)
+        negatives = set(rank_ID) - positives
+
+        positives = np.vstack([candidates_bow[i] for i in positives])
+        negatives = np.vstack([candidates_bow[i] for i in negatives])
+        test_features = test_features + P_FACTOR * np.average(positives, axis=0) - \
+                        N_FACTOR * np.average(negatives, axis=0)
+        test_features = preprocessing.normalize(test_features.reshape(1, -1), norm='l2').flatten()
+        print('This is the new result!')
+        candidates_bow, rank_ID = search(test_features)
