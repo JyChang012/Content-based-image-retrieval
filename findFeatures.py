@@ -12,7 +12,7 @@ from tqdm import tqdm
 parser = ap.ArgumentParser()
 parser.add_argument("-t", "--trainingSet", help="Path to Training Set", required=True)
 args = parser.parse_args(
-    '-t dataset/training/'.split(' ')
+    # '-t dataset/training/'.split(' ')
 )
 
 # Get the training classes names and store them in a list

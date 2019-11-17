@@ -1,18 +1,27 @@
-# bag of words for image retrieval
+# Bag of Words for Image Retrieval
 
-![](http://yongyuan.name/images/posts/2015-06-16/ukbench00000.jpg)
+## Features
+- Inverted file index for reconstructing boW of images from dataset
+- RANSAC based spatial verification
+- Vocabulary tree using hierarchical k-means
+- Relevance feedback based on query point movement (does not coexist with voc tree)
 
-Python Implementation of Bag of Words for Image Retrieval using OpenCV and
-sklearn | [Post](http://yongyuan.name/blog/practical-BoW-for-image-retrieval-with-python.html)
+## Usage
+ 
+```shell script
+usage: search.py [-h] -i IMAGE [-f]
 
-## Training the codebook and quantization
+optional arguments:
+  -h, --help            show this help message and exit
+  -i IMAGE, --image IMAGE
+                        Path to query image
 ```
-python findFeatures.py -t dataset/train/
-```
 
-* Query a single image
-```
-python search.py -i dataset/train/ukbench00000.jpg
-```
+```shell script
+usage: findFeatures.py [-h] -t TRAININGSET
 
-![](http://yongyuan.name/images/posts/2015-06-16/ukbench00055.jpg)
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TRAININGSET, --trainingSet TRAININGSET
+                        Path to Training Set
+```
