@@ -32,4 +32,18 @@ optional arguments:
 
 ![search result_with_feedback](demo/result_trinity_000033.jpg.svg)
 
+```shell script
+100%|█████████████████████████████████████| 1000/1000 [00:00<00:00, 2944.18it/s]
+Do you want to continue to give feedback?
+$ y
+y
+Please enter the indices of your desirable images, starting from 0 and split by space!
+0 5 11 12 14
+0 5 11 12 14
+100%|█████████████████████████████████████| 1000/1000 [00:00<00:00, 3924.76it/s]
+This is the new result!
+Do you want to continue to give feedback?
+$ n
+```
 
+![search result_with_feedback](demo/new_result_trinity_000033.jpg.svg)
