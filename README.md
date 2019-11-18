@@ -25,3 +25,7 @@ optional arguments:
   -t TRAININGSET, --trainingSet TRAININGSET
                         Path to Training Set
 ```
+
+## Demo
+
+![search result](demo/result_radcliffe_camera_000397.jpg.svg)
